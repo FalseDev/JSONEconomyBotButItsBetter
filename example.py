@@ -2,7 +2,7 @@ from discord.ext import commands
 from economy import Economy
 
 
-bot = commands.Bot(command_prefix=lambda ctx:['e ', 'E '])
+bot = commands.Bot(command_prefix=lambda _1,_2:['e ', 'E '])
 
 economy = Economy(bot, items={
     'stick': {'price': 10},
@@ -29,6 +29,11 @@ async def use_stick(ctx: commands.Context):
 async def any_name(ctx: commands.Context):
     await ctx.send("You played a game and lost :(")
 
+
+# Setup a custom handler when a user enters an invalid item
+@economy.event()
+async def on_invalid_item(ctx: commands.Context, item_name: str):
+    await ctx.send(f"What are you thinking man? {item_name} is not even in the shop")
 
 @bot.event
 async def on_ready():
