@@ -2,14 +2,19 @@ import asyncio
 import json
 import traceback
 from typing import Callable, List, Optional
+from io import StringIO
 
 import aiofiles
 from discord.ext import commands
-from discord import Member
+from discord import Member, File
 
 
 class ImproperUseFunctionName(Exception):
-    """Error thrown when the name of an item-use function is not valid"""
+    """Error thrown when the name of an item-use function is invalid"""
+
+
+class ImproperEventName(Exception):
+    """Error thrown when the name of an event function is invalid"""
 
 
 class Economy(commands.Cog):
@@ -91,6 +96,15 @@ class Economy(commands.Cog):
         await self.load_json_data()
         await ctx.send("Done!")
 
+    @commands.command(name="senddata")
+    @commands.is_owner()
+    async def senddata(self, ctx: commands.Context):
+        await ctx.send(
+            file=File(
+                StringIO(json.dumps(self.data)),
+                filename=self.bank_data_file)
+        )
+
     # Helpers
     def get_starter_account(self):
         return {
@@ -163,6 +177,19 @@ class Economy(commands.Cog):
                 item_name = func.__name__[4:]
 
             self.use_functions.update({item_name: func})
+        return predicate
+
+    def event(self, event_name: Optional[str] = None):
+        """Register a function as an event handler"""
+        def predicate(func: Callable):
+            nonlocal event_name
+            if event_name is None:
+                if not (hasattr(self, func.__name__) and func.__name__.startswith('on_')):
+                    raise ImproperEventName(
+                        f"{func.__name__} is an invalid name for an event")
+                event_name = func.__name__
+
+            setattr(self, event_name, func)
         return predicate
 
     # Commands
